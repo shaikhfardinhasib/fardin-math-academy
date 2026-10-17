@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import MathRenderer from "@/components/MathRenderer";
+import MathText from "@/components/math/MathText";
 import confetti from "canvas-confetti";
 import { Trophy, Timer, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 
@@ -204,7 +204,7 @@ export default function Home() {
 
             {/* Question Text */}
             <div className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
-              <MathRenderer text={currentQ.question} />
+              <MathText text={currentQ.question} />
             </div>
 
             {/* Options */}
@@ -236,7 +236,7 @@ export default function Home() {
                       <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      <MathRenderer text={opt} />
+                      <MathText text={opt} />
                     </div>
                     {selectedOption !== null && idx === currentQ.correct && (
                       <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -261,12 +261,12 @@ export default function Home() {
                 {currentQ.shortcut_tip && (
                   <p>
                     <span className="font-bold">⚡ শর্টকাট টিপ: </span>
-                    <MathRenderer text={currentQ.shortcut_tip} />
+                    <MathText text={currentQ.shortcut_tip} />
                   </p>
                 )}
                 <p>
                   <span className="font-bold">ব্যাখ্যা: </span>
-                  <MathRenderer text={currentQ.explanation} />
+                  <MathText text={currentQ.explanation} />
                 </p>
               </div>
             )}
