@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fardin's Math Academy
 
-## Getting Started
+Gamified MCQ practice for HSC Higher Math, with a Bangla UI. The current module is **সরলরেখা** (Straight Lines): 140 questions across exercises III A–III G. A student registers, takes a 10-question quiz (whole chapter or one exercise), sees the answer and explanation after each question, then gets a score and time.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| | Version |
+|---|---|
+| Next.js (App Router, `cacheComponents` on) | 16.4.2 |
+| React / React DOM | 19.3.0 |
+| TypeScript | ^5 |
+| Tailwind CSS | ^4 (`@tailwindcss/turbopack`) |
+| Zod | ^4.6.7 |
+| KaTeX | ^0.19.0 |
+| canvas-confetti | ^1.9.4 |
+| lucide-react | ^1.58.0 |
+| Vitest / tsx | ^5.0.5 / ^4.23.15 |
+| ESLint | ^9 (`eslint-config-next` 16.4.2) |
+
+> Next 16 differs from older versions; see [AGENTS.md](AGENTS.md) and `node_modules/next/dist/docs/` before changing Next-specific code.
+
+## Architecture
+
+Three layers; dependencies point downward only.
+
+1. **Data** (`src/lib/questions`): Zod schema, validation (reports every bad entry), dedupe by id, filter. `load.ts` is `server-only` and statically imports the JSON, so the page prerenders.
+2. **Domain** (`src/features/quiz/domain`, `src/lib/{random,math,text}`): pure TypeScript with no React. Session builder, reducer state machine (`registration → inProgress → finished`), selectors, Fisher–Yates shuffle, LaTeX tokenizer. The clock and RNG are injected, never called inside.
+3. **UI** (`src/features/quiz/{hooks,components}`, `src/components/math`): `page.tsx` is a server component that loads validated questions and passes them to the client `QuizApp`. Components render state and dispatch actions only.
+
+```
+.
+├── scripts/
+│   └── validate-questions.ts
+├── src/
+│   ├── app/                 layout.tsx, page.tsx (server), globals.css
+│   ├── components/
+│   │   └── math/            MathText.tsx
+│   ├── data/                straight-lines.json
+│   ├── features/
+│   │   └── quiz/
+│   │       ├── components/  QuizApp, RegistrationForm, QuizHeader, QuestionCard,
+│   │       │                OptionButton, ExplanationPanel, ResultSummary
+│   │       ├── domain/      types, session, reducer, selectors, registration
+│   │       ├── hooks/       useQuizSession, useElapsedTime
+│   │       └── exercises.ts
+│   └── lib/
+│       ├── math/            tokenize, render
+│       ├── questions/       schema, validate, dedupe, filter, load
+│       ├── random/          shuffle, seeded
+│       └── text/            sanitize
+├── public/
+├── vitest.config.mts
+└── next.config.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tests sit next to the code as `*.test.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start the Next dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | ESLint |
+| `npm test` | Run Vitest once |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run validate:questions` | Validate the question JSON; exits non-zero on problems |
 
-## Learn More
+Type-check with `npx tsc --noEmit`.
 
-To learn more about Next.js, take a look at the following resources:
+## Data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Questions live in `src/data/straight-lines.json` (array of objects). Fields (see `src/lib/questions/schema.ts`):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Field | Rule |
+|---|---|
+| `id` | non-empty string, unique (e.g. `SL_001`) |
+| `exercise` | `III A` … `III G` |
+| `type_name` | non-empty string |
+| `difficulty` | `easy` \| `medium` \| `hard` |
+| `target_exam` | non-empty array of `hsc_standard`, `varsity_admission`, `engineering_admission`, `college_exam` |
+| `question`, `explanation` | non-empty; LaTeX in `$…$` / `$$…$$` |
+| `options` | exactly 4 non-empty strings |
+| `correct` | integer 0–3 (index into `options`) |
+| `shortcut_tip` | string, may be empty |
 
-## Deploy on Vercel
+Unknown keys are rejected. Options are shuffled per session and `correct` is remapped, so the stored position doesn't matter.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Validate after editing:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run validate:questions            # default file
+npx tsx scripts/validate-questions.ts path/to/other.json
+```
+
+It lists every invalid entry (index, id, reason) and fails on same-id entries with different content. Identical duplicates are collapsed at load time, with a warning from the script.
+
+## Dev environment notes
+
+- Development happens over an SSH remote.
+- `.gitattributes` enforces LF line endings (`* text=auto eol=lf`).
+- Run all tooling (node, npm, git) from **one** environment. Don't mix Windows node/git with WSL: line endings and `node_modules` binaries will conflict.
+
+## Status
+
+**Done**
+- Registration → quiz → result flow (chapter or per-exercise, 10 questions)
+- Validated, deduplicated question bank; option shuffling
+- Reducer-based quiz state; derived score; drift-free timer
+- KaTeX rendering with safe fallback; confetti at ≥80%
+- Unit tests for data, shuffle, session, reducer, selectors, tokenizer
+
+**Not yet built**
+- Firebase leaderboard
+- Review-mistakes tab (the `wrongAnswers` selector exists; no UI)
+- Share card
+- Badges UI
+- Difficulty / target-exam filter UI (the filter and config support exist in the domain)
+- Dark mode fix
