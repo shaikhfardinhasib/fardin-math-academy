@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "demo-fma",
+    "production": "hsc-math-mcq-fardinshaikh"
+  }
+}
