@@ -66,8 +66,31 @@ Tests sit next to the code as `*.test.ts`.
 | `npm test` | Run Vitest once |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run validate:questions` | Validate the question JSON; exits non-zero on problems |
+| `npm run emulators` | Firebase Auth + Firestore emulators (project `demo-fma`, UI on :4000) |
+| `npm run test:rules` | Firestore rules tests (starts its own emulator) |
+| `npm run test:rules:running` | Same, against an already running `npm run emulators` |
+| `npm run provision -- <roster.csv> --out <file>` | Create student accounts; credentials go only to `--out` (outside the repo) |
+| `npm run provision -- --reset <studentId> --out <file>` | New password for one student, forces a change at next login |
+| `npm run set-teacher -- <email> [--create]` | Give an account the teacher role |
 
 Type-check with `npx tsc --noEmit`.
+
+## Auth
+
+The teacher provisions every student; there is no sign-up. Students sign in with a Student ID (`b26a-101`) and password, which maps to the synthetic email `<id>@<NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN>`. Google is an optional second login method, linked to the same account from the account page. Roles live only in custom claims (`{ role: "student", batchId }` / `{ role: "teacher" }`), set by the scripts via the Admin SDK. A user with no role sees the "not enrolled" screen and gets no data.
+
+The browser signs in with the Firebase client SDK just long enough to post an ID token to `/api/auth/session`, which sets an httpOnly session cookie. `getCurrentUser()` (`src/lib/auth/session.ts`) verifies it with revocation checks on every request. `src/proxy.ts` only redirects for UX; each page and Route Handler authorizes itself.
+
+Local development runs entirely on the emulators:
+
+```bash
+cp .env.local.example .env.local
+npm run emulators              # terminal 1
+npm run provision -- roster.csv --out ~/creds.csv   # roster columns: studentId,name,roll,batchId
+npm run dev                    # terminal 2
+```
+
+For the real project, use `.env.example` and pass `--production` to the scripts. The server refuses to start (and the scripts refuse to run) with the placeholder student domain, a `demo-` project, or mismatched client/server emulator settings.
 
 ## Data
 
@@ -110,6 +133,8 @@ It lists every invalid entry (index, id, reason) and fails on same-id entries wi
 - Reducer-based quiz state; derived score; drift-free timer
 - KaTeX rendering with safe fallback; confetti at ≥80%
 - Unit tests for data, shuffle, session, reducer, selectors, tokenizer
+
+- Teacher-provisioned accounts, session cookies, optional linked Google login, Firestore rules + emulator tests
 
 **Not yet built**
 - Firebase leaderboard

@@ -1,7 +1,30 @@
 rules_version = '2';
+
+// Roles come ONLY from Firebase Auth custom claims, which only the Admin SDK
+// can set. No rule ever reads a role from a document. The Admin SDK bypasses
+// these rules, so every write to users/{uid} goes through the provisioning
+// scripts or a Route Handler.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny; real rules land in the rules phase.
+
+    function hasRole(role) {
+      // A missing claim makes this false (no role = unenrolled = no access).
+      return request.auth != null && request.auth.token.get('role', null) == role;
+    }
+
+    function isSelf(uid) {
+      return request.auth.uid == uid;
+    }
+
+    // Roster entries (one per student).
+    match /users/{uid} {
+      allow get: if hasRole('student') && isSelf(uid);
+      allow read: if hasRole('teacher');
+      allow write: if false;
+    }
+
+    // Default deny for every other path. (Rules are OR-ed, so this cannot
+    // revoke anything granted above; it documents the default.)
     match /{document=**} {
       allow read, write: if false;
     }

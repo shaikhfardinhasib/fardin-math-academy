@@ -12,7 +12,9 @@
     "validate:questions": "tsx scripts/validate-questions.ts",
     "emulators": "firebase emulators:start --project demo-fma --only auth,firestore",
     "provision": "tsx --env-file-if-exists=.env.local scripts/provision-students.ts",
-    "set-teacher": "tsx --env-file-if-exists=.env.local scripts/set-teacher.ts"
+    "set-teacher": "tsx --env-file-if-exists=.env.local scripts/set-teacher.ts",
+    "test:rules": "firebase emulators:exec --project demo-fma --only firestore \"vitest run --config vitest.rules.config.mts\"",
+    "test:rules:running": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 vitest run --config vitest.rules.config.mts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
