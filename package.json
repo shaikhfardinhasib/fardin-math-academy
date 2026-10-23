@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:questions": "tsx scripts/validate-questions.ts",
-    "emulators": "firebase emulators:start --project demo-fma --only auth,firestore"
+    "emulators": "firebase emulators:start --project demo-fma --only auth,firestore",
+    "provision": "tsx --env-file-if-exists=.env.local scripts/provision-students.ts",
+    "set-teacher": "tsx --env-file-if-exists=.env.local scripts/set-teacher.ts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

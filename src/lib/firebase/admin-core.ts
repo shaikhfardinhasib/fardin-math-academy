@@ -23,7 +23,8 @@ export function createAdminServices(
   const config = resolveAdminConfig(env, (p) => readFileSync(p, "utf8"));
   const app: App =
     config.mode === "emulator"
-      ? // The SDK reads FIREBASE_AUTH_EMULATOR_HOST / FIRESTORE_EMULATOR_HOST itself.
+      ? // The SDK reads FIREBASE_AUTH_EMULATOR_HOST / FIRESTORE_EMULATOR_HOST itself. (Firestore
+        // still probes the GCE metadata server for ADC; that fails harmlessly off-GCP.)
         initializeApp({ projectId: config.projectId }, appName)
       : initializeApp(
           {
