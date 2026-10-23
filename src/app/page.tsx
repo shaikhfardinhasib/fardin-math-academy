@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import QuizApp from "@/features/quiz/components/QuizApp";
 import { requireEnrolledUser } from "@/lib/auth/guards";
@@ -31,6 +32,18 @@ export default function Home() {
 
 async function AuthorizedQuiz() {
   // Authorize before any question data is rendered into the response.
-  await requireEnrolledUser();
-  return <QuizApp questions={questions} />;
+  const user = await requireEnrolledUser();
+  return (
+    <>
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium text-slate-600 truncate">
+          {user.status === "student" ? user.name : (user.name ?? user.email ?? "শিক্ষক")}
+        </span>
+        <Link href="/account" className="font-semibold text-blue-700 hover:underline shrink-0">
+          অ্যাকাউন্ট
+        </Link>
+      </div>
+      <QuizApp questions={questions} />
+    </>
+  );
 }

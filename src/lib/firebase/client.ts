@@ -50,3 +50,10 @@ export function getClientAuth(): Auth {
   }
   return auth;
 }
+
+/** Domain for synthetic student emails; the server's startup check validates it. */
+export function studentEmailDomain(): string {
+  const domain = process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN;
+  if (!domain) throw new Error("Missing NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN");
+  return domain;
+}

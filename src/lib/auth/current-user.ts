@@ -37,8 +37,17 @@ export type CurrentUser =
       roll: string;
       batchId: string;
       mustChangePassword: boolean;
+      /** Seconds since epoch of the sign-in behind this session (for re-auth checks). */
+      authTime: number;
     }
-  | { status: "teacher"; uid: string; email: string | null; name: string | null; mustChangePassword: false };
+  | {
+      status: "teacher";
+      uid: string;
+      email: string | null;
+      name: string | null;
+      mustChangePassword: false;
+      authTime: number;
+    };
 
 export type EnrolledUser = Extract<CurrentUser, { status: "student" | "teacher" }>;
 
@@ -85,7 +94,14 @@ export async function resolveCurrentUser(
   if (!claims.success) return { status: "unenrolled", uid: token.uid, email };
 
   if (claims.data.role === "teacher") {
-    return { status: "teacher", uid: token.uid, email, name: token.name ?? null, mustChangePassword: false };
+    return {
+      status: "teacher",
+      uid: token.uid,
+      email,
+      name: token.name ?? null,
+      mustChangePassword: false,
+      authTime: token.auth_time,
+    };
   }
 
   // A student claim without a valid roster entry is treated as not enrolled: no data access.
@@ -101,5 +117,6 @@ export async function resolveCurrentUser(
     // The claim is authoritative; the doc copy is display data.
     batchId: claims.data.batchId,
     mustChangePassword: profile.data.mustChangePassword,
+    authTime: token.auth_time,
   };
 }

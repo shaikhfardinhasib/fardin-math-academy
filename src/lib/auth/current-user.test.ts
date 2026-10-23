@@ -63,6 +63,7 @@ describe("resolveCurrentUser", () => {
       email: "t@example.com",
       name: "Fardin",
       mustChangePassword: false,
+      authTime: 0,
     });
     expect(d.loadStudentProfile).not.toHaveBeenCalled();
   });
@@ -77,6 +78,7 @@ describe("resolveCurrentUser", () => {
       roll: "101",
       batchId: "b26a",
       mustChangePassword: false,
+      authTime: 0,
     });
   });
 
